@@ -1,8 +1,11 @@
 from django.shortcuts import render
 from plivo import plivoxml
-
+import plivo
 # Create your views here.
 from django.http import HttpResponse
+
+#client = plivo.RestClient(auth_id='your_auth_id', auth_token='your_auth_token')
+client = ''
 
 def index(request):
     return HttpResponse("Hello, world. You're at the sms index.")
@@ -48,7 +51,7 @@ def receive_sms(request):
     return HttpResponse("Message received", status=200)
 
 
-def inbound_sms(request):
+def reply_to_sms(request):
 
     from_number, to_number, text = get_parameters(request)
 
@@ -80,7 +83,29 @@ def inbound_sms(request):
     # return Response(str(r),mimetype='text/xml')
 
 
-def report(request):
+def forward_sms(request):
+    from_number, to_number, text = get_parameters(request)
+
+    resp = plivoxml.Response()
+
+    # The phone number to which the SMS has to be forwarded
+    to_forward = '333333333'
+    body = 'Forwarded message : {}'.format(text)
+    params = {
+        'src': to_number,  # Sender's phone number
+        'dst': to_forward,  # Receiver's phone number
+    }
+
+    # Message added
+    resp.addMessage(body, **params)
+
+    # Prints the XML
+    print(resp.to_xml())
+    # Returns the XML
+    return HttpResponse(str(resp), content_type='text/xml')
+
+
+def delivery_report(request):
     # Sender's phone number
     from_number = request.values.get('From')
 
@@ -100,3 +125,26 @@ def report(request):
     print(message)
 
     return HttpResponse("Delivery status reported")
+
+
+def send_sms(request):
+    from_number, to_number, text = get_parameters(request)
+
+    response = client.messages.create(
+        src = from_number,
+        dst = to_number,
+        text = text
+    )
+
+    return HttpResponse(str(response), status=200)
+
+
+def send_bulk_sms(request):
+    from_number, to_number, text = get_parameters(request)
+    response = client.messages.create(
+        src=from_number,
+        dst=to_number,
+        text=text
+    )
+
+    return HttpResponse(str(response), status=200)
